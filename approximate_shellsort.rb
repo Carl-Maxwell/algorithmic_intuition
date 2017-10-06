@@ -1,4 +1,7 @@
 
+# require "byebug"
+require "pry-byebug"
+
 def shell_sort(a, accuracy = nil)
   iter = 0
 
@@ -54,17 +57,41 @@ def coherence(elems, max_incoherence = nil)
   end
   # output = (sum.to_f / elems.length)
 
-  sum = 1 - sum.to_f / max_incoherence
+  sum = 1.0 - sum.to_f / max_incoherence
 end
 
-def calculate_approximate_coherence(elems, max_incoherence = nil)
-  max_incoherence = calculate_max_incoherence(elems.length) unless max_incoherence
+def calculate_approximate_coherence(elems, buggy = false)
 
-  # need to approximate coherence?
+  max_incoherence = calculate_max_incoherence(elems.length)
 
   n = elems.length
 
   sample = (0...n-1).to_a.sample(Math.sqrt(n)*2)
+
+  puts sample if buggy
+
+  # this particular set of sample elements causes problems
+  # I think they are too incoherent
+  # I think [4, 5] might be the only coherent pair
+  # these are the sample elements:
+  # [[20, 39],
+  # [73, 83],
+  # [86, 37],
+  # [35, 70],
+  # [15, 6],
+  # [1, 32],
+  # [44, 33],
+  # [30, 84],
+  # [14, 86],
+  # [43, 30],
+  # [79, 23],
+  # [58, 75],
+  # [75, 8],
+  # [49, 56],
+  # [55, 14],
+  # [4, 5],
+  # [19, 82],
+  # [60, 13]]
 
   sum = sample.reduce(0) do |sum, i|
     sum + [0, (elems[i] - elems[i+1]).abs - 1].max
@@ -73,8 +100,15 @@ def calculate_approximate_coherence(elems, max_incoherence = nil)
 
   # sum * Math.sqrt(n)
 
-
   sum = 1 - (sum * Math.sqrt(n)) / max_incoherence
+
+  if sum < 0.0
+    puts elems
+    puts sum
+    binding.pry
+  end
+
+  sum
 end
 
 def calculate_incoherence(elems, max_incoherence = nil)
@@ -136,6 +170,16 @@ results = []
 
     approx_coherence = calculate_approximate_coherence(a)
 
+    if approx_coherence < 0
+      result = {n: n, approx: approx_coherence, coherence: initial_coherence, accuracy: approx_coherence/initial_coherence}
+
+      puts a
+      puts result
+
+      calculate_approximate_coherence(a)
+
+      exit
+    end
 
     results << {n: n, approx: approx_coherence, coherence: initial_coherence, accuracy: approx_coherence/initial_coherence}
 
