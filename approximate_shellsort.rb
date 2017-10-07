@@ -1,6 +1,6 @@
 
 # require "byebug"
-require "pry-byebug"
+# require "pry-byebug"
 
 def shell_sort(a, accuracy = nil)
   iter = 0
@@ -45,19 +45,20 @@ $coherence_iter = 0
 # TODO approximate coherence?
 
 def coherence(elems, max_incoherence = nil)
-  max_incoherence = calculate_max_incoherence(elems.length) unless max_incoherence
+  1.0 - calculate_incoherence(elems)
+end
 
-  # need to approximate coherence?
+def calculate_incoherence(elems, max_incoherence = nil)
+  max_incoherence = calculate_max_incoherence(elems.length) unless max_incoherence
 
   sum = elems.each_with_index.reduce(0) do |sum, (elem, i)|
     next sum if i > elems.length - 2
-    $coherence_iter += 1
 
     sum + [0, (elem - elems[i+1]).abs - 1].max
   end
   # output = (sum.to_f / elems.length)
 
-  sum = 1.0 - sum.to_f / max_incoherence
+  sum.to_f / max_incoherence
 end
 
 def calculate_approximate_coherence(elems, buggy = false)
@@ -105,24 +106,14 @@ def calculate_approximate_coherence(elems, buggy = false)
   if sum < 0.0
     puts elems
     puts sum
-    binding.pry
+    puts "actual coherence: #{coherence(elems)}"
+    exit
   end
 
   sum
 end
 
-def calculate_incoherence(elems, max_incoherence = nil)
-  # max_incoherence = calculate_max_incoherence(elems.length) unless max_incoherence
 
-  sum = elems.each_with_index.reduce(0) do |sum, (elem, i)|
-    next sum if i > elems.length - 2
-
-    sum + [0, (elem - elems[i+1]).abs - 1].max
-  end
-  # output = (sum.to_f / elems.length)
-
-  sum
-end
 
 
 def puts(*str)
@@ -147,17 +138,92 @@ def calculate_max_incoherence(n)
 end
 
 
+def min_incoherence_array(n)
+  elems = (1..n).to_a
+  elems[-2], elems[-1] = elems[-1], elems[-2]
+
+  elems
+end
+
+def min_incoherence(n)
+  calculate_incoherence(min_incoherence_array(n))
+end
+
+def min_coherence(n)
+  coherence(min_incoherence_array(n))
+end
+
+
+def calculate_mini_incoherence
+
+end
+
 results = []
 
 # [0.9, nil].each do |accuracy|
   # (10..1000).each do |n|
-  1000.times do
+  # 1000.times do
     n = 90
     a = (1..n).to_a.shuffle
 
     $coherence_iter = 0
     initial_coherence = coherence(a)
     # $coherence_iter = 0
+
+  # predicting incoherence:
+  # 1.0 / x where x is:
+  # [nil, nil, nil, 4, 7, 12, 17, 23, 31, 40, 49, 60, 49, 60, 71, 84, 97, 112, 127, 144, 161, 180, 199, 220] {80: 3120, 81: 3199, 82: 3280, 83: 3361}
+  # [nil, nil, nil, nil, 3, 5, 5, 6, 8, 9, 9, 11, 11, 13, 15, 15, 17, 17, 19, 19, 21] {81: 79, 82: 81, 83: 81}
+  # [nil, nil, nil, nil, nil, 2, 0, 1, 2, 2, 1, 0, 0, 2, 0, 2, 0, 2, 0, 2] {82: 2, 83: 0}
+  # note that n=1 and n=2 are coherence 1.0 by definition not by calculation. n=3 is the first one where incoherence can be measured, and at n= 3 the only possible incoherences are 0.0 and 1.0.
+
+  # TODO write a function for calculating min_incoherence
+
+  def calculate_min_incoherence_part(x)
+    if x > 10
+      y = x - 10
+
+      # [(y % 2 * 2), (y-1), 9]
+      (y % 2 * 2)
+    else
+      [0, 0, 0, 0, 3, 2, 0, 1, 2, 1, 0][x]
+    end
+  end
+
+  def calculate_min_incoherence(x)
+    (0..x).each.with_index.reduce(0) do |sum, (_, y)|
+      sum + calculate_min_incoherence_part(y)
+    end
+  end
+
+  sequence = (0...20).to_a.map {|x| calculate_min_incoherence(x)}
+
+  puts "calculated sequence: ", sequence
+
+  puts "correct sequence: ", [nil, nil, nil, nil, 3, 5, 5, 6, 8, 9, 9, 11, 11, 13, 15, 15, 17, 17, 19, 19, 21]
+
+    bad_array = [[20, 39],
+    [73, 83],
+    [86, 37],
+    [35, 70],
+    [15, 6],
+    [1, 32],
+    [44, 33],
+    [30, 84],
+    [14, 86],
+    [43, 30],
+    [79, 23],
+    [58, 75],
+    [75, 8],
+    [49, 56],
+    [55, 14],
+    [4, 5],
+    [19, 82],
+    [60, 13]]
+
+    puts calculate_max_incoherence(n)/n
+
+    puts bad_array.map {|bad| (bad[0] - bad[1]).abs }
 
     # TODO getting negative numbers from approx, that should be impossible
 
@@ -168,38 +234,28 @@ results = []
 
     # runs in 2.12 seconds  without coherence
 
-    approx_coherence = calculate_approximate_coherence(a)
 
-    if approx_coherence < 0
-      result = {n: n, approx: approx_coherence, coherence: initial_coherence, accuracy: approx_coherence/initial_coherence}
+    # if approx_coherence < 0
+    #   result = {n: n, approx: approx_coherence, coherence: initial_coherence, accuracy: approx_coherence/initial_coherence}
 
-      puts a
-      puts result
+    #   puts a
+    #   puts result
 
-      calculate_approximate_coherence(a)
+    #   calculate_approximate_coherence(a)
 
-      exit
-    end
+    #   exit
+    # end
 
-    results << {n: n, approx: approx_coherence, coherence: initial_coherence, accuracy: approx_coherence/initial_coherence}
+    # results << {n: n, approx: approx_coherence, coherence: initial_coherence, accuracy: approx_coherence/initial_coherence}
 
-    #puts "n: #{n}", "approx coherence sum: #{approx_coherence}, actual coherence: #{initial_coherence}, max_incoherence: #{calculate_max_incoherence(n)}" #"approximate coherence: #{approx_coherence}/#{initial_coherence} (#{approx_coherence/initial_coherence*100}%)", "coherence: #{initial_coherence}", "incoherence: #{calculate_incoherence(a)}", "coherence_iterations: #{$coherence_iter}"
-
-    # puts "n: #{n}", "approximate coherence: #{approx_coherence}/#{initial_coherence} (#{approx_coherence/initial_coherence*100}%)", "coherence: #{initial_coherence}", "incoherence: #{calculate_incoherence(a)}", "coherence_iterations: #{$coherence_iter}"
-
-    # puts "n: #{n}", "iterations saved: #{(i2.to_f/i1)*100}%", "iterations: #{i1 - i2} = #{i1} - #{i2}", "coherence_iterations: #{$coherence_iter}"
-
-    # puts "n: #{n}", "iterations_saved: (#{i2.to_f/i1*100}%)", "coherence_loss: #{100*(coherence(a1) - coherence(a2))}%"
-
-    # puts "iterations: #{iterations}", "accuracy: #{accuracy}", "coherence: #{coherence(a)}", "initial coherence: #{initial_coherence}"
-  end
+  # end
 # end
 
-results = results.sort_by {|result| result[:accuracy] }
+# results = results.sort_by {|result| result[:accuracy] }
 
-puts "lowest accuracy", results.first
-puts "highest accuracy", results.last
-puts "average accuracy", results.map {|result| result[:accuracy] }.reduce(&:+).to_f/results.length
+# puts "lowest accuracy", results.first
+# puts "highest accuracy", results.last
+# puts "average accuracy", results.map {|result| result[:accuracy] }.reduce(&:+).to_f/results.length
 
 # [3, Math.log(a.length), Math.log(a.length)**2, Math.sqrt(a.length), a.length/2, 346/2, nil].each do |sample_size|
 #   puts
