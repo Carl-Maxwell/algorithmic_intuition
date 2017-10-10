@@ -127,11 +127,22 @@ def test_successive_iteration(n)
 
   shell_sorted = unsorted.dup.shell_sort
 
-  puts "initial incoherence: #{unsorted.incoherence}", "total iterations: #{i_sum} (#{(i_sum.to_f/shell_sorted.iterations - 1.0)*100}% gained)", "| straight shell sort iterations: #{shell_sorted.iterations}", "| n*log2(n): #{n*Math.log2(n)}"
+  # puts "initial incoherence: #{unsorted.incoherence}", "total iterations: #{i_sum} (#{(i_sum.to_f/shell_sorted.iterations - 1.0)*100}% gained)", "| straight shell sort iterations: #{shell_sorted.iterations}", "| n*log2(n): #{n*Math.log2(n)}"
+  # puts "initial incoherence: #{unsorted.incoherence - 0.5}", "iteration gain: (#{(i_sum.to_f/shell_sorted.iterations - 1.0)*100}% gained)"
+  [unsorted.incoherence - 0.5, (i_sum.to_f/shell_sorted.iterations - 1.0)*100]
 end
 
 def run_successive_tests(n)
-  test_successive_iteration(n)
+  results = []
+  100.times do
+    disorder, iteration_gain = test_successive_iteration(n)
+
+    results << {disorder: disorder, iteration_gain: iteration_gain}
+  end
+
+  results = results.sort_by {|result| result[:disorder] }
+
+  results.each {|result| puts result[:iteration_gain] }
 end
 
 def run_atomic_operation_tests(n)
@@ -148,8 +159,4 @@ def run_atomic_operation_tests(n)
   puts "avg gain: #{gain_sum/n}", "min gain: #{min_incoherence(n)}", "avg_iterations: #{iterations_sum/n}"
 end
 
-10.times do
-  # puts
-  run_successive_tests(100)
-  # puts
-end
+run_successive_tests(100)
