@@ -18,7 +18,9 @@ class Array
 
     return self if original_coherence >= 0.98
 
-    shell_sorted_arr = shell_sort
+    shell_sorted_arr = shell_sort do |semi_sorted_arr|
+        semi_sorted_arr.coherence > self.coherence
+    end
 
     if incoherence > 0.5
       shuffled_arr = random_sort
@@ -37,7 +39,7 @@ class Array
     arr
   end
 
-  def shell_sort
+  def shell_sort(&block)
     arr = dup
 
     self.iterations = 0
@@ -45,7 +47,11 @@ class Array
     arr, _ = shell_sort_until(arr) do |semi_sorted_arr|
       self.iterations += 1
 
-      semi_sorted_arr.coherence > self.coherence
+      if block
+        block.call(semi_sorted_arr)
+      else
+        false
+      end
     end
 
     arr.iterations = self.iterations
@@ -104,25 +110,24 @@ def test_successive_iteration(n)
   unsorted = (1..n).to_a.shuffle
   sorted   = unsorted.dup
 
-  puts "initial coherence: #{unsorted.coherence}"
-
   i_sum             = 0
   total_random_gain = 0.0
 
   (n*Math.log2(n)).to_i.times do
     last_sorted = sorted
-    sorted = sorted.measured_sort
+    sorted      = sorted.measured_sort
 
     i_sum             += sorted.iterations
     total_random_gain += sorted.random_gain
 
-    describe_arrays(last_sorted, sorted) if sorted.random_gain > 0
+    # describe_arrays(last_sorted, sorted) if sorted.random_gain > 0
 
     break if sorted.coherence >= 0.97
   end
 
-  puts
-  puts "total iterations: #{i_sum} (#{i_sum/(n*Math.log2(n))}%)", "n*log2(n): #{n*Math.log2(n)}"
+  shell_sorted = unsorted.dup.shell_sort
+
+  puts "initial incoherence: #{unsorted.incoherence}", "total iterations: #{i_sum} (#{(i_sum.to_f/shell_sorted.iterations - 1.0)*100}% gained)", "| straight shell sort iterations: #{shell_sorted.iterations}", "| n*log2(n): #{n*Math.log2(n)}"
 end
 
 def run_successive_tests(n)
@@ -143,8 +148,8 @@ def run_atomic_operation_tests(n)
   puts "avg gain: #{gain_sum/n}", "min gain: #{min_incoherence(n)}", "avg_iterations: #{iterations_sum/n}"
 end
 
-3.times do
-  puts
+10.times do
+  # puts
   run_successive_tests(100)
-  puts
+  # puts
 end
