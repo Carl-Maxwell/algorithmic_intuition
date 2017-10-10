@@ -14,41 +14,61 @@ class Array
   end
 
   def measured_sort
-
-  end
-
-  def random_sort
     original_coherence = calculate_coherence(self)
 
     return self if original_coherence >= 0.98
 
-    shuffled_arr = dup
-    shell_sorted_arr = dup
+    shell_sorted_arr = shell_sort
+
+    if incoherence > 0.5
+      shuffled_arr = random_sort
+
+      arr = if shuffled_arr.coherence > shell_sorted_arr.coherence then shuffled_arr else shell_sorted_arr end
+      arr.random_iterations = shuffled_arr.random_iterations
+
+      arr.random_gain = shuffled_arr.coherence - shell_sorted_arr.coherence
+    else
+      arr = shell_sorted_arr
+
+      arr.random_iterations = 0
+      arr.random_gain = 0
+    end
+
+    arr
+  end
+
+  def shell_sort
+    arr = dup
+
+    arr, _ = shell_sort_until(arr) do |semi_sorted_arr|
+      semi_sorted_arr.coherence > self.coherence
+    end
+
+    arr
+  end
+
+  def random_sort
+    arr = dup
 
     self.random_iterations = 0
 
+    (Math.log2(self.length)).to_i.times do
+      new_shuffle = shuffle
+      arr = new_shuffle if new_shuffle.coherence > arr.coherence
+      self.random_iterations += 1
+    end
+
+    arr.random_iterations = self.random_iterations
+
+    arr
+  end
+
+  def permutation_sort
     # permutation(length) do |new_shuffle|
     #   self.random_iterations += 1
     #   shuffled_arr = new_shuffle if new_shuffle.coherence > original_coherence
     #   break if random_iterations > (Math.log2(self.length))
     # end
-
-    (4*Math.log2(self.length)).to_i.times do
-      new_shuffle = shuffle
-      shuffled_arr = new_shuffle if new_shuffle.coherence > shuffled_arr.coherence
-      self.random_iterations += 1
-    end
-
-    shell_sorted_arr, _ = shell_sort_until(shell_sorted_arr) do |semi_sorted_arr|
-      semi_sorted_arr.coherence > original_coherence
-    end
-
-    arr = if shuffled_arr.coherence > shell_sorted_arr.coherence then shuffled_arr else shell_sorted_arr end
-    arr.random_iterations = self.random_iterations
-
-    arr.random_gain = shuffled_arr.coherence - shell_sorted_arr.coherence
-
-    arr
   end
 end
 
@@ -85,7 +105,7 @@ def test_successive_iteration(n)
 
   (n*Math.log2(n)).to_i.times do
     last_sorted = sorted
-    sorted = sorted.random_sort
+    sorted = sorted.measured_sort
 
     i_sum             += sorted.random_iterations
     total_random_gain += sorted.random_gain
