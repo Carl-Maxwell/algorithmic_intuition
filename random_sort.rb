@@ -59,6 +59,8 @@ class Array
     arr
   end
 
+  # TODO develop a custom shuffle function, then watch the number sequences that are randomly generated and attempt to find patterns that are associated with better performance
+
   def random_sort
     arr = dup
 
