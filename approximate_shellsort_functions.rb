@@ -36,7 +36,7 @@ def shell_sort(a, accuracy = nil)
   [a, iter]
 end
 
-def shell_sort_block(arr, &block)
+def shell_sort_until(arr, &block)
   a = arr.dup
   iter = 0
 
